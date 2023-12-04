@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  telegram_bot:
+    platform: linux/amd64
+    build:
+      context: ./telegram_bot
+    networks:
+      - mynetwork
+#    depends_on:
+#      -
+
+  selenium-chromium:
+    image: seleniarm/standalone-chromium:latest
+    container_name: selenium-chromium
+    ports:
+      - "4444:4444"  # Selenium port
+      - "5900:5900"  # VNC port
+      - "7900:7900"  # noVNC port
+    shm_size: '2gb'
+    networks:
+      - mynetwork
+
+#  djangoapp:
+#    build:
+#      context: ./myapi
+#    depends_on:
+#      - db
+#    environment:
+#      - DATABASE_URL=postgresql://admin:prod@db:5432/postgres
+#    ports:
+#      - "8000:8000"
+#    networks:
+#      - mynetwork
+#
+#  db:
+#    image: postgres:13
+#    environment:
+#      - POSTGRES_DB=postgres
+#      - POSTGRES_USER=admin
+#      - POSTGRES_PASSWORD=prod
+#    volumes:
+#      - pg_data:/var/lib/postgresql/data
+#    networks:
+#      - mynetwork
+
+volumes:
+  pg_data:
+
+networks:
+  mynetwork:
+    driver: bridge
