@@ -28,6 +28,7 @@ def create_keyboard_buttons(*args):
 
 @dp.message(F.text == '/start')
 async def main_menu(message: Message, state: FSMContext):
+    await state.set_state(MainMenuStates.user_main_menu)
     buttons = create_keyboard_buttons('Узнать стоимость', 'Контакты')
 
     await message.answer(f'{message.from_user.full_name}, добро пожаловать в телегам-бот для '
@@ -35,7 +36,7 @@ async def main_menu(message: Message, state: FSMContext):
                          reply_markup=buttons)
 
 
-@dp.message(F.text == 'Контакты')
+@dp.message(MainMenuStates.user_main_menu, F.text == 'Контакты')
 async def return_contacts(message: Message, state: FSMContext):
     await message.answer('Наши контакты:\n\nТелефон: +79..\nТелеграм: @username')
 

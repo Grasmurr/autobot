@@ -3,3 +3,4 @@
 pyvenv.cfg
 /lib
 /bin
+/telegram_bot/assets/config.py
