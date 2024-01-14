@@ -50,7 +50,7 @@ async def mailing_id_enter(message: Message, state: FSMContext):
         await message.answer(f"Вы собираетесь отправить сообщение пользователю <b>{user_profile_link}</b>. "
                              f"Подтвердить?\n\n"
                              f"Также вы можете отправить сообщение вручную, перейдя по ссылке на профиль пользователя",
-                             reply_markup=markup)
+                             reply_markup=markup, parse_mode=ParseMode.HTML)
         await state.set_state(AdminStates.mailing_id_confirm_user)
 
 @dp.message(AdminStates.mailing_id_confirm_user, F.text == 'Назад')
@@ -83,7 +83,7 @@ async def mailing_id_enter_message_text(message: Message, state: FSMContext):
                          f"<b>Текст:</b>\n\n"
                          f"{text}\n\n"
                          f"Подтвердить?",
-                         reply_markup=markup)
+                         reply_markup=markup, parse_mode=ParseMode.HTML)
     await state.update_data(text=text)
     await state.set_state(AdminStates.mailing_id_сonfirm_message_text)
 

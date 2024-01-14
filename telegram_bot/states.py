@@ -12,6 +12,17 @@ class AdminStates(StatesGroup):
     main = State()
 
     mailing_options = State()
+
     mailing_id_enter = State()
     mailing_id_confirm_user = State()
     mailing_id_enter_message_text = State()
+    mailing_id_сonfirm_message_text = State()
+
+    begin_mailing = State()
+    mailing_with_text = State()
+    mailing_with_file = State()
+    mailing_with_photo = State()
+
+
+
+

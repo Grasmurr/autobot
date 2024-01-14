@@ -19,8 +19,8 @@ from telegram_bot.handlers.user_panel.main_menu import main_menu
 
 @dp.message(F.text == '/admin', F.from_user.id == ADMIN_ID)
 async def admin_menu(message: Message, state: FSMContext):
-    markup = create_keyboard_buttons("Отправить сообщение пользователям",
-                                      "Выгрузить таблицу пользователей",
+    markup = create_keyboard_buttons("Рассылка",
+                                      "Выгрузить данные",
                                       "На панель юзера")
     await state.set_state(AdminStates.main)
     await message.answer('Добро пожаловать в админ-панель', reply_markup=markup)
@@ -30,10 +30,10 @@ async def admin_menu(message: Message, state: FSMContext):
 async def back_from_main_menu(message: Message, state: FSMContext):
     await main_menu(message, state)
 
-@dp.message(AdminStates.main, F.text == 'Отправить сообщение пользователям')
+@dp.message(AdminStates.main, F.text == 'Рассылка')
 async def mailing_menu(message: Message, state: FSMContext):
     markup = create_keyboard_buttons("По ID",
-                                     "Зарегистрированным пользователям",
+                                     "Всем пользователям",
                                      "Назад")
     await state.set_state(AdminStates.mailing_options)
     await message.answer('Как вы хотите отправить сообщение?', reply_markup=markup)
