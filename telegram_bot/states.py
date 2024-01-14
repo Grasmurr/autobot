@@ -7,3 +7,11 @@ class MainMenuStates(StatesGroup):
     report_choose = State()
     enter_name_for_request = State()
     enter_number_for_request = State()
+
+class AdminStates(StatesGroup):
+    main = State()
+
+    mailing_options = State()
+    mailing_id_enter = State()
+    mailing_id_confirm_user = State()
+    mailing_id_enter_message_text = State()
