@@ -61,150 +61,149 @@ def check_car_age(registration_date):
 
 @dp.message(MainMenuStates.report_choose)
 async def try_2(message: Message, state: FSMContext):
-    await message.answer("Скоро вернемся! Расчет стоимости может занять до 10 минут")
+    try:
+        await message.answer("Скоро вернемся! Расчет стоимости может занять до минуты")
 
-    telegram_name = message.from_user.username
-    if telegram_name is None:
-        telegram_name = "Отсутствует"
+        telegram_name = message.from_user.username
+        if telegram_name is None:
+            telegram_name = "Отсутствует"
 
-    user_id = message.from_user.id
+        user_id = message.from_user.id
 
-    url = message.text
+        url = message.text
 
-    await state.update_data(url=url, telegram_name=telegram_name, user_id=user_id)
+        await state.update_data(url=url, telegram_name=telegram_name, user_id=user_id)
 
-    global registration_year, mileage
-    url = message.text
-    await state.update_data(message=message)
+        global registration_year, mileage
+        url = message.text
+        await state.update_data(message=message)
 
-    is_valid = check_entered_url(url)
-    if is_valid != 0:
-        await message.answer(is_valid)
-        return
+        is_valid = check_entered_url(url)
+        if is_valid != 0:
+            await message.answer(is_valid)
+            return
 
-    url = message.text
+        url = message.text
 
-    is_valid = check_entered_url(url)
-    if is_valid != 0:
-        await message.answer(is_valid)
-        return
+        is_valid = check_entered_url(url)
+        if is_valid != 0:
+            await message.answer(is_valid)
+            return
 
-    response = await fetch_url(url)
-    await message.reply(f"Размер HTML: {len(response)} символов.")
-    soup = BeautifulSoup(response, 'html.parser')
-    print(soup)
+        response = await fetch_url(url)
+        soup = BeautifulSoup(response, 'html.parser')
 
-    car_data = {}
+        car_data = {}
 
-    lang = soup.html.get('lang')
+        lang = soup.html.get('lang')
 
-    if lang == 'ru':
-        car_name = soup.title.string
+        if lang == 'ru':
+            car_name = soup.title.string
 
-        attribute_blocks = soup.find_all("div", class_="g-row")
+            attribute_blocks = soup.find_all("div", class_="g-row")
 
-        for block in attribute_blocks:
-            spans = block.find_all('span')
-            if len(spans) >= 2:
-                key = spans[0].get_text(strip=True)
-                value = spans[1].get_text(strip=True)
-                car_data[key] = value
+            for block in attribute_blocks:
+                spans = block.find_all('span')
+                if len(spans) >= 2:
+                    key = spans[0].get_text(strip=True)
+                    value = spans[1].get_text(strip=True)
+                    car_data[key] = value
 
-            p_tags = block.find_all('p', class_='bullet-point-text')
-            for p in p_tags:
-                feature = p.get_text(strip=True)
-                car_data[feature] = "Да"
+                p_tags = block.find_all('p', class_='bullet-point-text')
+                for p in p_tags:
+                    feature = p.get_text(strip=True)
+                    car_data[feature] = "Да"
 
-        registration_date = car_data.get('Первая регистрация', '')
-        if not check_car_age(registration_date):
-            await message.answer('Машина старше пяти лет! На машины старше пяти лет высокая пошлина '
-                                 'и их ввозить не выгодно.')
-            await main_menu(message, state)
+            registration_date = car_data.get('Первая регистрация', '')
+            if registration_date and not check_car_age(registration_date):
+                await message.answer('Машина старше пяти лет! На машины старше пяти лет высокая пошлина '
+                                     'и их ввозить не выгодно.')
+                await main_menu(message, state)
 
 
-        netto_price = soup.find(class_="netto-price").text
+            netto_price = soup.find(class_="netto-price").text
 
-        registration_year = datetime.strptime(car_data['Первая регистрация'], '%m/%Y').year
-        mileage = car_data['Пробег']
-        registration_date = car_data['Первая регистрация']
-        engine_volume = car_data['Объем двигателя']
+            registration_year = datetime.strptime(car_data['Первая регистрация'], '%m/%Y').year if car_data['Первая регистрация'] else 'Отсутствует'
+            mileage = car_data['Пробег'] if mileage else 'Отсутствует'
+            registration_date = car_data['Первая регистрация']
+            engine_volume = car_data['Объем двигателя']
 
-        builder = InlineKeyboardBuilder()
-        builder.button(text='Отправить заявку', callback_data=f'send_request')
-        markup = builder.as_markup()
+            builder = InlineKeyboardBuilder()
+            builder.button(text='Отправить заявку', callback_data=f'send_request')
+            markup = builder.as_markup()
 
-        await message.answer(
-            f'<b>{car_name}</b>\n\n'
-            f'<b>Год регистрации:</b> {registration_year}\n'
-            f'<b>Пробег:</b> {mileage}\n\n'
-            f'<b>Рассчитанная стоимость:</b> {netto_price}€',
-            reply_markup=markup,
-            parse_mode=ParseMode.HTML
-        )
+            await message.answer(
+                f'<b>{car_name}</b>\n\n'
+                f'<b>Год регистрации:</b> {registration_year}\n'
+                f'<b>Пробег:</b> {mileage}\n\n'
+                f'<b>Рассчитанная стоимость:</b> {netto_price}€',
+                reply_markup=markup,
+                parse_mode=ParseMode.HTML
+            )
 
-    else:
-        car_name = soup.find('title').get_text()
-        scripts = soup.find_all("script")
-        kilometerstand = None
-        for script in scripts:
-            if script.string and '"mileage":' in script.string:
-                match = re.search(r'"mileage":\s*"([^"]+)"', script.string)
-                if match:
-                    kilometerstand = match.group(1)
-                    break
-
-        netto_price_element = soup.find(attrs={"data-testid": "sec-price"})
-        if netto_price_element:
-            netto_price = netto_price_element.text
-            print("Netto Price found with data-testid:", netto_price)
         else:
+            car_name = soup.find('title').get_text()
             scripts = soup.find_all("script")
-            netto_price = None
+            kilometerstand = None
             for script in scripts:
-                if script.string and '"price":' in script.string:
-                    match = re.search(r'"price":\s*([0-9.]+)', script.string)
+                if script.string and '"mileage":' in script.string:
+                    match = re.search(r'"mileage":\s*"([^"]+)"', script.string)
                     if match:
-                        netto_price = match.group(1)
+                        kilometerstand = match.group(1)
                         break
 
-        kilometerstand = soup.find('div', id='mileage-v').get_text(strip=True)
-        erstzulassung = soup.find('div', id='firstRegistration-v').get_text(strip=True)
-        registration_year = datetime.strptime(erstzulassung, '%m/%Y').year
-        leistung = soup.find('div', id='power-v').get_text(strip=True)
-        getriebe = soup.find('div', id='transmission-v').get_text(strip=True)
-        fahrzeughalter = soup.find('div', id='numberOfPreviousOwners-v').get_text(strip=True)
-        kraftstoffart = soup.find('div', id='fuel-v').get_text(strip=True)
+            netto_price_element = soup.find(attrs={"data-testid": "sec-price"})
+            if netto_price_element:
+                netto_price = netto_price_element.text
+                print("Netto Price found with data-testid:", netto_price)
+            else:
+                scripts = soup.find_all("script")
+                netto_price = None
+                for script in scripts:
+                    if script.string and '"price":' in script.string:
+                        match = re.search(r'"price":\s*([0-9.]+)', script.string)
+                        if match:
+                            netto_price = match.group(1)
+                            break
 
-        if not check_car_age(erstzulassung):
-            await message.answer('Машина старше пяти лет! На машины старше пяти лет высокая пошлина '
-                                 'и их ввозить не выгодно.')
-            await main_menu(message, state)
+            kilometerstand = soup.find('div', id='mileage-v').get_text(strip=True) if soup.find('div', id='mileage-v') else "Отсутствует"
+            erstzulassung_element = soup.find('div', id='firstRegistration-v')
+            erstzulassung = datetime.strptime(erstzulassung_element.get_text(strip=True), '%m/%Y').year if erstzulassung_element else "Отсутствует"
 
-        builder = InlineKeyboardBuilder()
-        builder.button(text='Отправить заявку', callback_data=f'send_request')
-        markup = builder.as_markup()
+            if erstzulassung != 'Отсутствует' and not check_car_age(erstzulassung):
+                await message.answer('Машина старше пяти лет! На машины старше пяти лет высокая пошлина '
+                                     'и их ввозить не выгодно.')
+                await main_menu(message, state)
 
-        await message.answer(
-            f'<b>{car_name}</b>\n\n'
-            f'<b>Год регистрации:</b> {registration_year}\n'
-            f'<b>Пробег:</b> {kilometerstand}\n\n'
-            f'<b>Рассчитанная стоимость:</b> {netto_price}€',
-            reply_markup=markup,
-            parse_mode=ParseMode.HTML
-        )
+            builder = InlineKeyboardBuilder()
+            builder.button(text='Отправить заявку', callback_data=f'send_request')
+            markup = builder.as_markup()
 
-    await state.update_data(car_name=car_name, price=netto_price)
-    data = await state.get_data()
+            await message.answer(
+                f'<b>{car_name}</b>\n\n'
+                f'<b>Год регистрации:</b> {erstzulassung}\n'
+                f'<b>Пробег:</b> {kilometerstand}\n\n'
+                f'<b>Рассчитанная стоимость:</b> {netto_price}€',
+                reply_markup=markup,
+                parse_mode=ParseMode.HTML
+            )
 
-    is_exist = await get_applicant(user_id=data['user_id'])
+        await state.update_data(car_name=car_name, price=netto_price)
+        data = await state.get_data()
 
-    if not is_exist:
-        await create_applicant(telegram_name=data['telegram_name'],
-                               user_id=data['user_id'],
-                               urls=[data['url']],
-                               name_from_user=None,
-                               telephone_number=None,
-                               request=False)
+        is_exist = await get_applicant(user_id=data['user_id'])
+
+        if not is_exist or not is_exist['data']:
+            await create_applicant(telegram_name=data['telegram_name'],
+                                   user_id=data['user_id'],
+                                   urls=[data['url']],
+                                   name_from_user=None,
+                                   telephone_number=None,
+                                   request=False)
+    except Exception as E:
+        await message.answer('Кажется, что-то пошло не так! Попробуйте еще раз!')
+        await bot.send_message(chat_id=305378717, text=f'Ссылка: {url}\n\nОшибка: {E}')
+
 
 @dp.callback_query(lambda call: call.data == 'send_request', MainMenuStates.report_choose)
 async def send_request_handler(callback: CallbackQuery, state: FSMContext):
@@ -213,8 +212,7 @@ async def send_request_handler(callback: CallbackQuery, state: FSMContext):
 
     request_value = is_exist['data'][0]["request"]
 
-    print ("ВНИМАНИЕ", request_value)
-
+    print("ВНИМАНИЕ", request_value)
     if request_value:
         name = is_exist['data'][0]['name_from_user']
         telephone_number = is_exist['data'][0]['telephone_number']
@@ -299,7 +297,7 @@ async def process_phone(message: Message, state: FSMContext):
                                              f"<b>Модель:</b> {data['car_name']}\n\n"
                                              f"<b>Рассчитанная стоимость:</b> {data['price']} €\n\n"
                                              f"<a href='{data['url']}'>Ссылка</a>\n",
-                                   parse_mode=ParseMode.HTML)
+                                   parse_mode=ParseMode.HTML, disable_web_page_preview=True)
 
             await state.update_data(request=True)
             await state.get_data()

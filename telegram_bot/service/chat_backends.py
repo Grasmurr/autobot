@@ -49,7 +49,6 @@ def get_page_source(url):
         "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
         "(KHTML, like Gecko) Chrome/98.0.4758.102 Safari/537.36")
 
-
     driver = webdriver.Remote(
         command_executor='http://selenium-chromium:4444/wd/hub',
         options=chrome_options

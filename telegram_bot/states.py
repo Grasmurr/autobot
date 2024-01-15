@@ -23,6 +23,9 @@ class AdminStates(StatesGroup):
     mailing_with_file = State()
     mailing_with_photo = State()
 
+    upload_data = State()
+    upload_data_in_format_final = State()
+
 
 
 
